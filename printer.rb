@@ -46,4 +46,14 @@ Press (q)uit at anytime to quit the game or (c)heat to display the answer.\n>"
     "Do you want to (p)lay again or (q)uit?"
   end
 
+  def congrats_message(seq, guess_count, mins, seconds)
+    "\nCongratulations! You guessed the sequence '#{seq}' in #{guess_count} guesses over
+#{mins} minutes and #{seconds} seconds.
+#{play_again}\n>"
+  end
+
+  def guess_again(input, correct_elements, correct_positions)
+    "\n'#{input}' has #{correct_elements} of the correct elements with #{correct_positions} in the correct positions. Please guess again.\n>"
+  end
+
 end

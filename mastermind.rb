@@ -1,6 +1,7 @@
 require_relative 'response'
 require_relative 'timer'
 require_relative 'printer'
+require_relative 'validity_checker'
 
 class Mastermind
   attr_accessor :sequence
@@ -12,6 +13,7 @@ class Mastermind
     @printer = Printer.new
     @timer = Timer.new
     @timer.start_timer
+    @validity_checker = ValidityChecker.new
   end
 
   def generate_sequence
@@ -24,15 +26,15 @@ class Mastermind
   end
 
   def check_validity_of_guess(input)
-    if input == "q" || input == "quit"
+    if @validity_checker.quit?(input)
       Response.new(:message => @printer.good_bye, :status => :quit) #quit game
-    elsif input == "c" || input == "cheat"
+    elsif @validity_checker.cheat?(input)
       Response.new(:message => "\nThe correct answer is '#{@sequence.join}'. Please enter:\n>", :status => :retry)
-    elsif input.chars.size > 4
+    elsif @validity_checker.too_long?(input)
       Response.new(:message => @printer.too_long, :status => :retry)
-    elsif input.chars.size < 4
+    elsif @validity_checker.too_short?(input)
       Response.new(:message => @printer.too_short, :status => :retry)
-    elsif input.chars.all? {|l| l =="r" || l =="g" || l== "b" || l== "y"}
+    elsif @validity_checker.appropriate_chars?(input)
       Response.new(:message => "", :status => :continue)
     else
       Response.new(:message => @printer.invalid_response, :status => :retry)
@@ -56,17 +58,23 @@ class Mastermind
     correct_position_counter
   end
 
+  def correct_guess
+    @timer.end_timer
+    Response.new(:message => @printer.congrats_message(@sequence.join, @guess_count, @timer.game_time_mins, @timer.game_time_seconds ), :status => :won)
+  end
+
+  def wrong_guess(input)
+    correct_elements = give_correct_elements(input.chars)
+    correct_positions = give_correct_positions(input.chars)
+    Response.new(:message => @printer.guess_again(input, correct_elements, correct_positions), :status => :guess_again)
+  end
+
   def execute(input)
     @guess_count += 1
     if input.chars == @sequence
-      @timer.end_timer
-      Response.new(:message => "\nCongratulations! You guessed the sequence '#{@sequence.join}' in #{@guess_count} guesses over
-#{@timer.game_time_mins} minutes and #{@timer.game_time_seconds} seconds.
-#{@printer.play_again}\n>", :status => :won)
+      correct_guess
     else
-      correct_elements = give_correct_elements(input.chars)
-      correct_positions = give_correct_positions(input.chars)
-      Response.new(:message => "\n'#{input}' has #{correct_elements} of the correct elements with #{correct_positions} in the correct positions. Please guess again.\n>", :status => :guess_again)
+      wrong_guess(input)
     end
   end
 end
